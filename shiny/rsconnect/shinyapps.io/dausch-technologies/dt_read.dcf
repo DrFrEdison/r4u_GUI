@@ -1,0 +1,13 @@
+name: dt_read
+title: dt_read
+username:
+account: dausch-technologies
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 5925396
+bundleId: 5722454
+url: https://dausch-technologies.shinyapps.io/dt_read/
+when: 1648132658.39253
+lastSyncTime: 1648132658.39253
+asMultiple: FALSE
+asStatic: FALSE

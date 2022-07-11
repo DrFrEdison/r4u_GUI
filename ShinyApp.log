@@ -1,0 +1,9 @@
+library paths:
+... D:/dt_read_csv2/R-Portable/App/R-Portable/library
+Lade nötiges Paket: shiny
+Warnung: Paket 'shiny' wurde unter R Version 4.1.3 erstellt
+Warnung: Paket 'this.path' wurde unter R Version 4.1.3 erstellt
+Fehler in normalizePath(path.expand(path), winslash, mustWork) : 
+  path[1]="runShinyApp.R": Das System kann die angegebene Datei nicht finden
+Ruft auf: <Anonymous> ... this.path -> get.FILE.from.shell.args -> normalizePath
+Ausführung angehalten
