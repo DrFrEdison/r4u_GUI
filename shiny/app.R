@@ -3,15 +3,12 @@ library(this.path)
 library(r4dt)
 setwd(this.dir())
 
-
 dt <- list()
 dt$custom.list <- r4dt::dt_customer
 dt$custom.list$LG <- gsub("LG SG", "SG", paste("LG", dt$custom.list$LG))
 dt$custom.list$LG <- factor(dt$custom.list$LG, levels = c("LG 3", "LG 2", "SG", "LG 1"))
-dt$custom.list$customer <- factor(dt$custom.list$customer, levels = c("CCEP", "MEG", "Pepsi", "CapriSun"))
+dt$custom.list$customer <- factor(dt$custom.list$customer, levels = c("CCEP", "MEG", "PepsiCo", "CapriSun"))
 dt$product.ID <- r4dt::dt_customer_product_ID
-# custom <- dt$custom.list
-product.ID <- dt$custom.list
 
 # UI ####
 ui <- fluidPage(
@@ -32,7 +29,7 @@ ui <- fluidPage(
       "line"
       , h3("Line")
       , choices = dt$custom.list$line[order(dt$custom.list$LG)]
-      , selected = "G2"
+      , selected = "DS"
     )
     
     # List for Location
@@ -49,7 +46,7 @@ ui <- fluidPage(
     # Buttons for LG
     , radioButtons("LG", label = h3("LiquiGuard X")
                    , choices = levels(dt$custom.list$LG)
-                   , selected = as.character(0))
+                   , selected = "LG 3")
     
     # Buttons for customer
     , radioButtons("customer", label = h3("Customer")
@@ -57,15 +54,28 @@ ui <- fluidPage(
     
     # Date Menu
     , dateRangeInput("date", h3("Date range")
-                     , start = "2022-03-01" #Sys.Date()-10
-                     , end = "2022-03-18"
+                     , start = Sys.Date() - 10
+                     , end = Sys.Date()
                      , min = as.POSIXct(paste0(year(Sys.Date()) - 2, "-01-01"))
                      , weekstart = 1)
     
     # Type of spectra
     , checkboxGroupInput("type", label = h3("Type of spectra") 
-                         , choices = list("production spc" = "spc", "background spc" = "ref", "dark spc" = "drk")
-                         , selected = c("ref", "drk"))
+                         , choices = list("Production" = "spc", "Background" = "ref", "Dark" = "drk")
+                         , selected = c("spc", "ref", "drk"))
+    
+    # Ringkessel
+    , selectizeInput(
+      "ringkessel"
+      , h3("Ringkessel")
+      , choices = list("TRUE", "FALSE")
+      , selected = "TRUE")
+    
+    , selectizeInput(
+      "typecode"
+      , h3("Typecode")
+      , choices = list("All spectra" = NA, "production" = 0, "unknown product" = 1, "start of production" = 2, "hand measurement" = 16)
+      , selected = "All spectra")
   )
   
   , mainPanel(
@@ -97,18 +107,19 @@ server <- function(input, output) {
                                             , ", ", input$custom, ")"
                                             , " Product number NA")})
   
-  output$overview.date <- renderText({paste0("Date range from "
-                                             , paste0(wday(input$date[1], label = T, abbr = T, week_start = 1, locale = "English"), ", "
-                                                      , format(input$date[1], format="%d %b '%y", locale = "English"))
-                                             , " to "
-                                             , paste0(wday(input$date[2], label = T, abbr = T, week_start = 1, locale = "English"), ", "
-                                                      , format(input$date[2], format="%d %b '%y", locale = "English")))})
+  output$overview.date <- renderText({paste0("Date range from ")})
+                                             # , paste0(wday(input$date[1], label = T, abbr = T, week_start = 1, locale = "English"), ", "
+                                             #          , format(input$date[1], format="%d %b '%y", locale = "English"))
+                                             # , " to "
+                                             # , paste0(wday(input$date[2], label = T, abbr = T, week_start = 1, locale = "English"), ", "
+                                             #          , format(input$date[2], format="%d %b '%y", locale = "English")))})
   
   # update by line
   update.line <- reactive({
     dplyr::filter(dt$custom.list, line %in% input$line)
   })
   observeEvent(update.line(), {
+    choices.line <- update.line()$line
     choices.location <- update.line()$location
     choices.LG <- update.line()$LG
     choices.custom <- update.line()$customer
@@ -116,21 +127,21 @@ server <- function(input, output) {
     updateRadioButtons(inputId = "LG", selected = update.line()$LG)
     updateRadioButtons(inputId = "customer", selected = update.line()$customer)
   })
-  # 
-  # # update by location
-  # update.location <- reactive({
-  #   dplyr::filter(dt$custom.list, location %in% input$location)
-  # })
-  # observeEvent(update.location(), {
-  #   choices.line <- update.location()$line
-  #   choices.LG <- update.location()$LG
-  #   choices.custom <- update.location()$custom
-  #   updateSelectizeInput(inputId = "line", selected = update.location()$line)
-  #   updateRadioButtons(inputId = "LG", selected = update.location()$LG)
-  #   updateRadioButtons(inputId = "custom", selected = update.location()$custom)
-  # })
   
+  # update by location
+    update.location <- reactive({
+    dplyr::filter(dt$custom.list, location %in% input$location)
+  })
+  observeEvent(update.location(), {
+    if( nrow( update.location() ) == 1)  choices.line <- update.location()$line
+    choices.LG <- update.location()$LG
+    choices.custom <- update.location()$customer
+    if( nrow( update.location() ) == 1)  updateSelectizeInput(inputId = "line", selected = update.location()$line)
+    updateRadioButtons(inputId = "LG", selected = update.location()$LG)
+    updateRadioButtons(inputId = "customer", selected = update.location()$customer)
+  })
   
+
   # Download csv ####
   observeEvent(input$download, {
     message("running script.R")
@@ -140,12 +151,12 @@ server <- function(input, output) {
                           , location = input$location
                           , line = input$line
                           , product = NA
-                          , typecode = NA
-                          , Ringkessel = T
+                          , typecode = input$typecode
+                          , Ringkessel = input$ringkessel
                           , typeof = input$type
                           , slim = T
                           , return.R = T
-                          , product_ID = product.ID
+                          , product_ID = dt$product.ID
                           , customer.list = dt$custom.list
                           , export_directory = wd$csvtemp)
   })
@@ -164,7 +175,7 @@ server <- function(input, output) {
                           , typeof = "drk"
                           , slim = T
                           , return.R = T
-                          , product_ID = product.ID
+                          , product_ID = dt$product.ID
                           , customer.list = dt$custom.list
                           , export_directory = wd$csvtemp)
     
@@ -207,7 +218,7 @@ server <- function(input, output) {
                           , typeof = "ref"
                           , slim = T
                           , return.R = T
-                          , product_ID = product.ID
+                          , product_ID = dt$product.ID
                           , customer.list = dt$custom.list
                           , export_directory = wd$csvtemp)
     

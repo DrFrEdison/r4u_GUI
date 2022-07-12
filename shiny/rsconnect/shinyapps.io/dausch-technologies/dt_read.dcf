@@ -5,9 +5,7 @@ account: dausch-technologies
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 5925396
-bundleId: 5722454
+bundleId: 6090575
 url: https://dausch-technologies.shinyapps.io/dt_read/
-when: 1648132658.39253
-lastSyncTime: 1648132658.39253
-asMultiple: FALSE
-asStatic: FALSE
+when: 1657612801.40475
+lastSyncTime: 1657612801.40477
